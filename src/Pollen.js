@@ -7,9 +7,31 @@ var threshold =130;
 
 var imp = IJ.getImage();
 
+// 0-Dialog
+gd=new GenericDialog("Choose Sigmas");
+gd.addNumericField("Sigma 1:", 25, 1);
+gd.addNumericField("sigma 2:", 21, 2);
+gd.showDialog();
+
+sig1=gd.getNextNumber();
+sig2=gd.getNextNumber();
+
 // 1- DoG
 
+imp = IJ.openImage("C:\\Users\\ranne\\Desktop\\colza-8b\\pH 6.65_0.jpg");
+imp0 = imp.duplicate();
+imp2 = imp.duplicate();
+IJ.run(imp, "Gaussian Blur...", "sigma=" + sig1);
+IJ.run(imp2, "Gaussian Blur...", "sigma=" + sig2);
+ic = new ImageCalculator();
+imp3 = ic.run("Subtract create", imp, imp2);
+imp3.show();
+imp.close();
+imp2.close();
+
 // 2- Find Maxima
+IJ.run(imp3, "Find Maxima...", "noise=10 output=List exclude");
+imp3.close();
 
 // 3- Picking
 
