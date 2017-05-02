@@ -4,8 +4,13 @@ var size=120.0;
 var sig1 =16.0;
 var sig2 = 18.0;
 var threshold =130;
+var imp;
 
-var imp = IJ.getImage();
+// Select file window
+od =new OpenDialog("Choose a file", null);
+folder = od.getDirectory();
+file = od.getFileName();
+path = folder + file;
 
 // 0-Dialog
 gd=new GenericDialog("Choose Sigmas");
@@ -49,8 +54,8 @@ for(var i = 0;i < x.length; i++){
 
   // Extract
   IJ.log(x[i]+' '+y[i]);
-  imp.setRoi(new Roi(1.0*x[i]-half,1.0*y[i]-half,size,size) );
-  IJ.run(imp, "Copy", "");
+  imp0.setRoi(new Roi(1.0*x[i]-half,1.0*y[i]-half,size,size) );
+  IJ.run(imp0, "Copy", "");
 
   IJ.run(out, "Paste", "");  
   IJ.run(out, "Add Slice", "");
