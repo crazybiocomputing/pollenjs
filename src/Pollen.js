@@ -23,7 +23,7 @@ sig2=gd.getNextNumber();
 
 // 1- DoG
 
-imp = IJ.openImage("C:\\Users\\ranne\\Desktop\\colza-8b\\pH 6.65_0.jpg");
+imp = IJ.openImage(path);
 imp0 = imp.duplicate();
 imp2 = imp.duplicate();
 IJ.run(imp, "Gaussian Blur...", "sigma=" + sig1);
