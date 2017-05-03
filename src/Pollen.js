@@ -35,8 +35,13 @@ imp.close();
 imp2.close();
 
 // 2- Find Maxima
-IJ.run(imp3, "Find Maxima...", "noise=10 output=List exclude");
-imp3.close();
+var tolerance = 10; 
+var excludeOnEdges = false;
+var outputType=4;//list x, y of maxima in the Results table
+var ip3= imp3.getProcessor();
+var mf = new MaximumFinder();
+ip3= mf.findMaxima(ip3, tolerance, outputType, excludeOnEdges);
+
 
 // 3- Picking
 
