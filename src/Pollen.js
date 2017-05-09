@@ -76,8 +76,8 @@ function DoG(imp,sig1,sig2) {
   imp2.close();
   // return 
   if (DEBUG) {
-  dog.show();
-}
+    dog.show();
+  }
   return dog;
 }
 
@@ -92,8 +92,9 @@ function findParticles(imageplus,threshold) {
   ip3= mf.findMaxima(ip, threshold, outputType, excludeOnEdges);
 }
 
+//**************** M A I N ****************/
+
 //Parameters
-var path= '';
 var DEBUG = false;
 
 
