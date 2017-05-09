@@ -35,7 +35,7 @@ function GUI() {
   var size=120.0;
   var sig1 =16.0;
   var sig2 = 18.0;
-  var threshold =130;
+  var threshold =40.0;
 
   var gd=new GenericDialog("Pollen Params");
   gd.addNumericField("Particle Size:", size, 1);
