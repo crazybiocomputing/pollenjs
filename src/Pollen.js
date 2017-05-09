@@ -32,7 +32,7 @@ function DoG(imp,sig1,sig2) {
   IJ.run(imp1, "Gaussian Blur...", "sigma=" + sig1);
   IJ.run(imp2, "Gaussian Blur...", "sigma=" + sig2);
   var ic = new ImageCalculator();
-  var imp3 = ic.run("Subtract create", imp0, imp2);
+  var imp3 = ic.run("Subtract create", imp1, imp2);
   // Clean up imageplus
   imp1.close();
   imp2.close();
