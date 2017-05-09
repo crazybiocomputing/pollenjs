@@ -19,90 +19,128 @@
  *
  *
  * Authors:
- * Jean-Christophe Taveau
  * Rudy Anne
+ * Jean-Christophe Taveau
  */
+
+function GUI() {
+
+  var settings = {};
+  // Select file window
+  var od =new OpenDialog("Choose a file", null);
+  var folder = od.getDirectory();
+  var file = od.getFileName();
+  settings.path = folder + file;
+
+  var size=120.0;
+  var sig1 =16.0;
+  var sig2 = 18.0;
+  var threshold =130;
+
+  var gd=new GenericDialog("Pollen Params");
+  gd.addNumericField("Particle Size:", size, 1);
+  gd.addNumericField("Sigma1:", sig1, 2);
+  gd.addNumericField("Sigma2:", sig2, 3);
+  gd.addNumericField("Threshold", threshold, 4);
+  // Tolerance or Threshold
+  // Particle size,
+  // 
+  // etc.
+  gd.showDialog();
+
+  settings.size=gd.getNextNumber();
+  settings.sig1=gd.getNextNumber();
+  settings.sig2=gd.getNextNumber();
+  settings.threshold=gd.getNextNumber();
+
+  return settings;
+}
 
 /**
  * DoG: Difference of Gaussian
  */
 function DoG(imp,sig1,sig2) {
-  var imp1 = imp.duplicate();
-  var imp2 = imp.duplicate();
+  var copy = imp.duplicate();
+  IJ.run(copy, "8-bit", "");
+  copy.getProcessor().invert();
+  var imp1 = copy.duplicate(); imp1.setTitle("sigma 1");
+  var imp2 = copy.duplicate(); imp2.setTitle("sigma 2");
   IJ.run(imp1, "Gaussian Blur...", "sigma=" + sig1);
   IJ.run(imp2, "Gaussian Blur...", "sigma=" + sig2);
   var ic = new ImageCalculator();
-  var imp3 = ic.run("Subtract create", imp0, imp2);
+  var dog = ic.run("Subtract create", imp1, imp2);
+  IJ.run(dog, "Enhance Contrast...", "saturated=0.0 normalize");
+  dog.setTitle("DoG");
   // Clean up imageplus
   imp1.close();
   imp2.close();
   // return 
-  return imp3;
+  if (DEBUG) {
+  dog.show();
+}
+  return dog;
+}
+
+function findParticles(imageplus,threshold) {
+  // Reset Results window
+  ResultsTable.getResultsTable().reset();
+
+  var excludeOnEdges = false;
+  var outputType=4;//list x, y of maxima in the Results table
+  var ip= imageplus.getProcessor();
+  var mf = new MaximumFinder();
+  ip3= mf.findMaxima(ip, threshold, outputType, excludeOnEdges);
 }
 
 //Parameters
 var path= '';
-var size=120.0;
-var sig1 =16.0;
-var sig2 = 18.0;
-var threshold =130;
-var imp;
+var DEBUG = false;
 
-// Select file window
-var od =new OpenDialog("Choose a file", null);
-var folder = od.getDirectory();
-var file = od.getFileName();
-var path = folder + file;
 
 // 0-Dialog
-var gd=new GenericDialog("Pollen Params");
-gd.addNumericField("Sigma 1:", 25, 1);
-gd.addNumericField("sigma 2:", 21, 2);
-// Tolerance or Threshold
-// Particle size,
-// 
-// etc.
-gd.showDialog();
 
-sig1=gd.getNextNumber();
-sig2=gd.getNextNumber();
+var settings = GUI();
+
+var imp = IJ.openImage(settings.path);
+
 
 // 1- DoG
+var imp3 = DoG(imp,settings.sig1,settings.sig2);
 
-imp = IJ.openImage(path);
-var imp3 = DoG(imp,sig1,sig2);
+// throw "End of Script";
 
 // 2- Find Maxima
-var tolerance = 10; 
-var excludeOnEdges = false;
-var outputType=4;//list x, y of maxima in the Results table
-var ip3= imp3.getProcessor();
-var mf = new MaximumFinder();
-ip3= mf.findMaxima(ip3, tolerance, outputType, excludeOnEdges);
+
+findParticles(imp3,settings.threshold);
 
 
 // 3- Picking
 
-var out = IJ.createImage("Gallery", "8-bit black", size, size, 1);
-var half = size/2.0;
+
 var results = ResultsTable.getResultsTable();
 
 var x = results.getColumn(results.getColumnIndex('X'));
 var y = results.getColumn(results.getColumnIndex('Y'));
 //var d = results.getColumn(results.getColumnIndex('Diameter'));
 
+var out = IJ.createImage("Gallery", "8-bit black", settings.size, settings.size, 1);
+var half = settings.size/2.0;
+
 IJ.log('\\Clear');
 for(var i = 0;i < x.length; i++){
   // Remove outliers
+  if (x[i] - half >= 0.0 && x[i] + half < imp.width && y[i] - half >= 0.0 && y[i] + half < imp.height) {
+      // Extract
+      IJ.log(x[i]+' '+y[i]);
+      imp.setRoi(new Roi(1.0*x[i]-half,1.0*y[i]-half,settings.size,settings.size) );
+      IJ.run(imp, "Copy", "");
 
-  // Extract
-  IJ.log(x[i]+' '+y[i]);
-  imp0.setRoi(new Roi(1.0*x[i]-half,1.0*y[i]-half,size,size) );
-  IJ.run(imp0, "Copy", "");
-
-  IJ.run(out, "Paste", "");  
-  IJ.run(out, "Add Slice", "");
+      IJ.run(out, "Paste", "");  
+      IJ.run(out, "Add Slice", "");
+  }
 }
 out.show();
 
 // 4- Classification
+
+
