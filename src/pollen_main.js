@@ -28,7 +28,7 @@
 var DEBUG = false;
 var particles = [];
 
-
+var start_time = new Date();
 
 
 IJ.log('\\Clear');
@@ -83,6 +83,12 @@ for (var i = 0; i < particles.length; i++) {
 }
 results.showRowNumbers(true);
 results.show("Coords Table");
+
+
+
+var end_time = new Date();
+
+IJ.log('Operation took ' + (end_time.getTime() - start_time.getTime()) + ' msec');
 
 
 // throw "End of Script";

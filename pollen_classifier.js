@@ -128,15 +128,7 @@ tools.DoG = function(imp,sig1,sig2) {
  *
  */
 tools.findParticles = function(imageplus,threshold) {
-  // Reset Results window
-  // ResultsTable.getResultsTable().reset();
-
-  var excludeOnEdges = false;
-  // var outputType=4; //list x, y of maxima in the Results table
-  var ip= imageplus.getProcessor();
-  var mf = new MaximumFinder();
-  // ip3= mf.findMaxima(ip, threshold, outputType, excludeOnEdges);
-  return polygon = mf.getMaxima(ip, threshold, excludeOnEdges);
+  return polygon = new MaximumFinder().getMaxima(imageplus.getProcessor(), threshold, false);
 }
 
 /**
@@ -199,7 +191,7 @@ tools.pickParticles = function(org,coords,src,out) {
 var DEBUG = false;
 var particles = [];
 
-
+var start_time = new Date();
 
 
 IJ.log('\\Clear');
@@ -254,6 +246,12 @@ for (var i = 0; i < particles.length; i++) {
 }
 results.showRowNumbers(true);
 results.show("Coords Table");
+
+
+
+var end_time = new Date();
+
+IJ.log('Operation took ' + (end_time.getTime() - start_time.getTime()) + ' msec');
 
 
 // throw "End of Script";
