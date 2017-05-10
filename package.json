@@ -1,0 +1,31 @@
+{
+  "name": "pollen_classifier",
+  "version": "0.0.1",
+  "description": "Pollen Classifier",
+  "main": "pollenjs",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "make test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/crazybiocomputing/pollenjs.git"
+  },
+  "keywords": [
+    "javascript",
+    "ImageJ",
+    "university bordeaux"
+  ],
+  "author": "Jean-Christophe Taveau",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/crazybiocomputing/pollenjs/issues"
+  },
+  "devDependencies": {
+    "grunt": "^1.0.1",
+    "grunt-contrib-concat": "^1.0.1",
+    "grunt-contrib-uglify": "^2.2.0"
+  }
+}
