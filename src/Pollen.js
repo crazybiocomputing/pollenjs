@@ -81,6 +81,39 @@ function DoG(imp,sig1,sig2) {
   return dog;
 }
 
+//function closest pair
+function overlap(x,y,size){
+	var dist1;
+	var dist;
+	for(var i = 0;i < x.length; i++){
+	XM=x[i]
+    YM=y[i];
+    a=x.length;
+    var overlap;
+    overlaptab = new Array(a);
+    a1 = new Array(a);
+    for (k=0; k<x.length; k++){
+         XM2=x[k];
+         YM2=y[k];
+          dist1=dist;
+          dist=Math.sqrt(((XM2-XM)*(XM2-XM))+((YM2-YM)*(YM2-YM)));
+          a1[k] = dist;
+    }
+                for (k=0;k<a;k++){
+                        dist=a1[k];
+                        if(dist==0){dist=10000;}
+                        if (dist>dist1) {dist=dist1;}
+                        dist1=dist;
+                        if (dist1<size){overlap=true;} else{overlap=false;}
+                        overlaptab[k]=overlap;
+                }
+                
+                IJ.log("shortest_dist"+"indice i"+ i+ "valeur"+ dist1+ overlap)
+                
+        }
+        return overlaptab;
+    }
+
 function findParticles(imageplus,threshold) {
   // Reset Results window
   ResultsTable.getResultsTable().reset();
@@ -127,10 +160,12 @@ var y = results.getColumn(results.getColumnIndex('Y'));
 var out = IJ.createImage("Gallery", "8-bit black", settings.size, settings.size, 1);
 var half = settings.size/2.0;
 
+var closestTab=overlap(x,y,settings.size);
+
 IJ.log('\\Clear');
 for(var i = 0;i < x.length; i++){
   // Remove outliers
-  if (x[i] - half >= 0.0 && x[i] + half < imp.width && y[i] - half >= 0.0 && y[i] + half < imp.height) {
+  if (x[i] - half >= 0.0 && x[i] + half < imp.width && y[i] - half >= 0.0 && y[i] + half < imp.height && closestTab[i]===false) {
       // Extract
       IJ.log(x[i]+' '+y[i]);
       imp.setRoi(new Roi(1.0*x[i]-half,1.0*y[i]-half,settings.size,settings.size) );
@@ -138,7 +173,7 @@ for(var i = 0;i < x.length; i++){
 
       IJ.run(out, "Paste", "");  
       IJ.run(out, "Add Slice", "");
-  }
+  }else {continue;}
 }
 out.show();
 
