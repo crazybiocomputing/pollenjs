@@ -38,7 +38,7 @@ IJ.log('\\Clear');
 var settings = tools.GUI();
 
 if (settings === undefined) {
-  IJ.showMessage("Script canceled");
+  IJ.log("Script canceled");
   throw "End of Script";
 }
 
@@ -53,6 +53,7 @@ var last = 0; // Last particle index
 var start_time = new Date();
 
 for (var i in settings.filenames) {
+  
   var filename = settings.filenames[i].toString();
   // IJ.log('Image#'+i+ ': '+ filename + '===?' + settings.extension);
   if (filename.split('.').pop() === settings.extension) {
@@ -60,7 +61,7 @@ for (var i in settings.filenames) {
     var image = IJ.openImage(settings.path + filename);
     var imp = image.duplicate();
     IJ.run(imp, "8-bit", "");
-    IJ.run(imp, "Subtract Background...", "rolling=50");
+    IJ.run(imp, "Subtract Background...", "rolling=50"+(settings.dark ? " light": "") );
     
     // 1- DoG
     var imp3 = tools.DoG(imp,settings.sig1,settings.sig2);
@@ -89,7 +90,8 @@ for (var i in settings.filenames) {
 
   }
 }
-  gallery.show();
+gallery.getImageStack().deleteSlice(1);
+gallery.show();
 
 // 4- Classification
 

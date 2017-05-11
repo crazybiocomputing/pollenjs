@@ -60,7 +60,7 @@ tools.GUI = function () {
     var gd=new GenericDialog("Advanced Pollen Params");
     gd.addCheckbox("Dark Pollen", true);
     gd.addCheckbox("Thumbnails", true);
-    gd.addNumericField("Particle Size:", size, 1);
+    gd.addNumericField("Particle Diameter (px):", size, 1);
     gd.addNumericField("Sigma1:", sig1, 2);
     gd.addNumericField("Sigma2:", sig2, 3);
     gd.addNumericField("Threshold", thrshld, 4);
@@ -73,7 +73,8 @@ tools.GUI = function () {
     else {
       settings.dark  = gd.getNextBoolean();
       settings.thumb = gd.getNextBoolean();
-      settings.size  = gd.getNextNumber();
+      settings.diameter  = gd.getNextNumber();
+      settings.size  = settings.diameter * 3;
       settings.sig1  = gd.getNextNumber();
       settings.sig2  = gd.getNextNumber();
       settings.threshold = gd.getNextNumber();
@@ -84,7 +85,7 @@ tools.GUI = function () {
   var predefined = {
     "Colza" : {
       dark :true,
-      size :120.0,
+      diameter :40.0,
       sig1 : 16.0,
       sig2 : 18.0,
       threshold  :100
@@ -97,7 +98,7 @@ tools.GUI = function () {
     },
     "Tomato" : {
       dark :false,
-      size : 80.0,
+      diameter : 30.0,
       sig1 : 6.0,
       sig2 : 9.0,
       threshold  :80
@@ -130,7 +131,8 @@ tools.GUI = function () {
   } 
   else {
     settings.dark = predefined[settings.type].dark;
-    settings.size = predefined[settings.type].size;
+    settings.diameter = predefined[settings.type].diameter;
+    settings.size = settings.diameter * 3;
     settings.sig1 = predefined[settings.type].sig1;
     settings.sig2 = predefined[settings.type].sig2;
     settings.threshold = predefined[settings.type].threshold;
@@ -199,6 +201,11 @@ tools.pickParticles = function(org,coords,src,out) {
   }
 }
 
+tools.overlaps = function(pctls) {
+  for (var i in pctls) {
+
+  }
+}
 tools.displaySettings = function() {
   for (var prop in settings) {
     IJ.log(prop + ': '+settings[prop]);
@@ -249,7 +256,7 @@ IJ.log('\\Clear');
 var settings = tools.GUI();
 
 if (settings === undefined) {
-  IJ.showMessage("Script canceled");
+  IJ.log("Script canceled");
   throw "End of Script";
 }
 
@@ -264,6 +271,7 @@ var last = 0; // Last particle index
 var start_time = new Date();
 
 for (var i in settings.filenames) {
+  
   var filename = settings.filenames[i].toString();
   // IJ.log('Image#'+i+ ': '+ filename + '===?' + settings.extension);
   if (filename.split('.').pop() === settings.extension) {
@@ -271,7 +279,7 @@ for (var i in settings.filenames) {
     var image = IJ.openImage(settings.path + filename);
     var imp = image.duplicate();
     IJ.run(imp, "8-bit", "");
-    IJ.run(imp, "Subtract Background...", "rolling=50");
+    IJ.run(imp, "Subtract Background...", "rolling=50"+(settings.dark ? " light": "") );
     
     // 1- DoG
     var imp3 = tools.DoG(imp,settings.sig1,settings.sig2);
@@ -300,7 +308,8 @@ for (var i in settings.filenames) {
 
   }
 }
-  gallery.show();
+gallery.getImageStack().deleteSlice(1);
+gallery.show();
 
 // 4- Classification
 
