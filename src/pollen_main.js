@@ -28,7 +28,7 @@
 var DEBUG = false;
 var particles = [];
 
-var start_time = new Date();
+
 
 
 IJ.log('\\Clear');
@@ -42,19 +42,25 @@ if (settings === undefined) {
   throw "End of Script";
 }
 
-// 0- Create Particles stack
+
+// 0- Create Particles stack and thumbnails stack if asked
 var gallery = new ImagePlus("Gallery", ImageStack.create(settings.size, settings.size,1,8));
-  
+var stack;
+var last = 0; // Last particle index
+
 //**************** M A I N   L O O P ****************/
+
+var start_time = new Date();
 
 for (var i in settings.filenames) {
   var filename = settings.filenames[i].toString();
   // IJ.log('Image#'+i+ ': '+ filename + '===?' + settings.extension);
   if (filename.split('.').pop() === settings.extension) {
 
-    IJ.log(filename);
-    var imp = IJ.openImage(filename);
+    var image = IJ.openImage(settings.path + filename);
+    var imp = image.duplicate();
     IJ.run(imp, "8-bit", "");
+    IJ.run(imp, "Subtract Background...", "rolling=50");
     
     // 1- DoG
     var imp3 = tools.DoG(imp,settings.sig1,settings.sig2);
@@ -65,7 +71,22 @@ for (var i in settings.filenames) {
     // 3- Picking and Particles Extraction
     tools.pickParticles(imp,coords, filename, gallery);
     
-    // 4- Add particles in stack
+    if (settings.thumb) {
+        IJ.run(image, "Size...", "width="+image.getWidth()/settings.scale+" height="+image.getHeight()/settings.scale+" constrain average interpolation=None");
+        if (stack === undefined) {
+            stack = new ImagePlus("Thumbnails", ImageStack.create(image.getWidth(), image.getHeight(),1,24));
+        }
+        stack.getImageStack().addSlice(image.getProcessor());
+        stack.getImageStack().setSliceLabel(filename, stack.getNSlices());
+        var ip = stack.getImageStack().getProcessor(stack.getNSlices());
+        ip.setColor(new java.awt.Color(255,0,255));
+        var small = settings.size/settings.scale;
+        for (var i= last; i < particles.length; i++) {
+            ip.drawOval(particles[i].x/settings.scale - small/2.0,particles[i].y/settings.scale - small/2.0,small,small);
+        }
+        last = particles.length;
+    }
+
   }
 }
   gallery.show();
@@ -79,6 +100,7 @@ for (var i = 0; i < particles.length; i++) {
   results.incrementCounter();
   results.addValue('X',particles[i].x);
   results.addValue('Y',particles[i].y);
+  results.addValue('type',particles[i].type);
   results.addValue('src',particles[i].source);
 }
 results.showRowNumbers(true);
@@ -90,5 +112,11 @@ var end_time = new Date();
 
 IJ.log('Operation took ' + (end_time.getTime() - start_time.getTime()) + ' msec');
 
+if (settings.thumb) {
+  stack.getImageStack().deleteSlice(1);
+  stack.show();
+}
+
+tools.displaySettings();
 
 // throw "End of Script";

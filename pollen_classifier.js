@@ -33,8 +33,57 @@
  
 tools.GUI = function () {
 
+  function basicGUI() {
+    var gd=new GenericDialog("Pollen Params");
+    gd.addChoice("Predefined", ["Advanced","Colza","Peach","Strawberry","Tomato"],"Advanced");
+    gd.addCheckbox("Thumbnails", true);
+
+    gd.showDialog();
+
+    if (gd.wasCanceled()) {
+      return undefined;
+    }
+    else {
+      settings.type  = gd.getNextChoice();
+      settings.thumb = gd.getNextBoolean();
+    }
+    return settings;
+  }
+
+  function advancedGUI() {
+  
+    var size    = 100.0;
+    var sig1    = 6.0;
+    var sig2    = 8.0;
+    var thrshld = 100;
+  
+    var gd=new GenericDialog("Advanced Pollen Params");
+    gd.addCheckbox("Dark Pollen", true);
+    gd.addCheckbox("Thumbnails", true);
+    gd.addNumericField("Particle Size:", size, 1);
+    gd.addNumericField("Sigma1:", sig1, 2);
+    gd.addNumericField("Sigma2:", sig2, 3);
+    gd.addNumericField("Threshold", thrshld, 4);
+    
+    gd.showDialog();
+
+    if (gd.wasCanceled()) {
+      return undefined;
+    }
+    else {
+      settings.dark  = gd.getNextBoolean();
+      settings.thumb = gd.getNextBoolean();
+      settings.size  = gd.getNextNumber();
+      settings.sig1  = gd.getNextNumber();
+      settings.sig2  = gd.getNextNumber();
+      settings.threshold = gd.getNextNumber();
+    }
+    return settings;
+  }
+
   var predefined = {
     "Colza" : {
+      dark :true,
       size :120.0,
       sig1 : 16.0,
       sig2 : 18.0,
@@ -47,12 +96,18 @@ tools.GUI = function () {
     
     },
     "Tomato" : {
-    
+      dark :false,
+      size : 80.0,
+      sig1 : 6.0,
+      sig2 : 9.0,
+      threshold  :80
+
     }
   };
   
   
-  var settings = {};
+  var settings = {scale: 4,size: -1};
+  
   // Select file window
   var od =new OpenDialog("Choose a file", null);
   var folder = od.getDirectory();
@@ -62,39 +117,24 @@ tools.GUI = function () {
   var files = dir.listFiles(); 
   settings.filenames = [];
   for (var i = 0; i < files.length; i++) {
-    settings.filenames.push(files[i].toString());
+    settings.filenames.push(files[i].toString().substring(folder.length));
   }
   settings.filenames.sort();
+  settings.path   = folder;
+  settings.folder = folder.substring(0,folder.length - 1).split('/').pop();
   
-  var size=120.0;
-  var sig1 =16.0;
-  var sig2 = 18.0;
-  var threshold =100;
 
-  var gd=new GenericDialog("Pollen Params");
-  gd.addChoice("Predefined", ["Custom..","Colza","Peach","Strawberry","Tomato"],"Custom...");
-  gd.addNumericField("Particle Size:", size, 1);
-  gd.addNumericField("Sigma1:", sig1, 2);
-  gd.addNumericField("Sigma2:", sig2, 3);
-  gd.addNumericField("Threshold", threshold, 4);
-
-  // Tolerance or Threshold
-  // Particle size,
-  // 
-  // etc.
-  gd.showDialog();
-
-  if (gd.wasCanceled()) {
-    return undefined;
-  }
+  settings = basicGUI();
+  if (settings.type === 'Advanced') {
+    settings = advancedGUI();
+  } 
   else {
-    settings.type = gd.getNextChoice();
-    settings.size = gd.getNextNumber();
-    settings.sig1 = gd.getNextNumber();
-    settings.sig2 = gd.getNextNumber();
-    settings.threshold = gd.getNextNumber();
+    settings.dark = predefined[settings.type].dark;
+    settings.size = predefined[settings.type].size;
+    settings.sig1 = predefined[settings.type].sig1;
+    settings.sig2 = predefined[settings.type].sig2;
+    settings.threshold = predefined[settings.type].threshold;
   }
-
 
   return settings;
 }
@@ -104,7 +144,9 @@ tools.GUI = function () {
  */
 tools.DoG = function(imp,sig1,sig2) {
   var copy = imp.duplicate();
-  copy.getProcessor().invert();
+  if (settings.dark) {
+    copy.getProcessor().invert();
+  }
   var imp1 = copy.duplicate(); imp1.setTitle("sigma 1");
   var imp2 = copy.duplicate(); imp2.setTitle("sigma 2");
   IJ.run(imp1, "Gaussian Blur...", "sigma=" + sig1);
@@ -148,12 +190,18 @@ tools.pickParticles = function(org,coords,src,out) {
     // Remove outliers
     if (x[i] - half >= 0.0 && x[i] + half < org.width && y[i] - half >= 0.0 && y[i] + half < org.height) {
         // Extract
-        particles.push({x: x[i], y: y[i], box: settings.size, source: src});
+        particles.push({x: x[i], y: y[i], type: 'U', box: settings.size, source: settings.folder + '/' + src});
         org.setRoi(new Roi(1.0*x[i]-half,1.0*y[i]-half,settings.size,settings.size) );
         var tmp = org.duplicate();
         out.getImageStack().addSlice(tmp.getProcessor());
         // out.updateImage();
     }
+  }
+}
+
+tools.displaySettings = function() {
+  for (var prop in settings) {
+    IJ.log(prop + ': '+settings[prop]);
   }
 }
 
@@ -191,7 +239,7 @@ tools.pickParticles = function(org,coords,src,out) {
 var DEBUG = false;
 var particles = [];
 
-var start_time = new Date();
+
 
 
 IJ.log('\\Clear');
@@ -205,19 +253,25 @@ if (settings === undefined) {
   throw "End of Script";
 }
 
-// 0- Create Particles stack
+
+// 0- Create Particles stack and thumbnails stack if asked
 var gallery = new ImagePlus("Gallery", ImageStack.create(settings.size, settings.size,1,8));
-  
+var stack;
+var last = 0; // Last particle index
+
 //**************** M A I N   L O O P ****************/
+
+var start_time = new Date();
 
 for (var i in settings.filenames) {
   var filename = settings.filenames[i].toString();
   // IJ.log('Image#'+i+ ': '+ filename + '===?' + settings.extension);
   if (filename.split('.').pop() === settings.extension) {
 
-    IJ.log(filename);
-    var imp = IJ.openImage(filename);
+    var image = IJ.openImage(settings.path + filename);
+    var imp = image.duplicate();
     IJ.run(imp, "8-bit", "");
+    IJ.run(imp, "Subtract Background...", "rolling=50");
     
     // 1- DoG
     var imp3 = tools.DoG(imp,settings.sig1,settings.sig2);
@@ -228,7 +282,22 @@ for (var i in settings.filenames) {
     // 3- Picking and Particles Extraction
     tools.pickParticles(imp,coords, filename, gallery);
     
-    // 4- Add particles in stack
+    if (settings.thumb) {
+        IJ.run(image, "Size...", "width="+image.getWidth()/settings.scale+" height="+image.getHeight()/settings.scale+" constrain average interpolation=None");
+        if (stack === undefined) {
+            stack = new ImagePlus("Thumbnails", ImageStack.create(image.getWidth(), image.getHeight(),1,24));
+        }
+        stack.getImageStack().addSlice(image.getProcessor());
+        stack.getImageStack().setSliceLabel(filename, stack.getNSlices());
+        var ip = stack.getImageStack().getProcessor(stack.getNSlices());
+        ip.setColor(new java.awt.Color(255,0,255));
+        var small = settings.size/settings.scale;
+        for (var i= last; i < particles.length; i++) {
+            ip.drawOval(particles[i].x/settings.scale - small/2.0,particles[i].y/settings.scale - small/2.0,small,small);
+        }
+        last = particles.length;
+    }
+
   }
 }
   gallery.show();
@@ -242,6 +311,7 @@ for (var i = 0; i < particles.length; i++) {
   results.incrementCounter();
   results.addValue('X',particles[i].x);
   results.addValue('Y',particles[i].y);
+  results.addValue('type',particles[i].type);
   results.addValue('src',particles[i].source);
 }
 results.showRowNumbers(true);
@@ -253,5 +323,11 @@ var end_time = new Date();
 
 IJ.log('Operation took ' + (end_time.getTime() - start_time.getTime()) + ' msec');
 
+if (settings.thumb) {
+  stack.getImageStack().deleteSlice(1);
+  stack.show();
+}
+
+tools.displaySettings();
 
 // throw "End of Script";
