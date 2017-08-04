@@ -31,7 +31,8 @@ HT2D.gradient = function(imp) {
     var impDX = imp.duplicate();
     IJ.run(impDX, "32-bit", "");
     IJ.run(impDX, "Enhance Contrast...", "saturated=0 normalize process_all use");
-    IJ.run(impDX, "Convolve...", "text1=[1 0 -1\n2 0 -2\n1 0 -1\n]  stack");
+    IJ.run(impDX, "Convolve...", "text1=[1 0 -1\n] normalize");
+    //IJ.run(impDX, "Convolve...", "text1=[1 0 -1\n2 0 -2\n1 0 -1\n]  stack");
     // IJ.run(impDX, "Enhance Contrast...", "saturated=0 normalize process_all");
 
 
@@ -40,7 +41,8 @@ HT2D.gradient = function(imp) {
     var impDY = imp.duplicate();
     IJ.run(impDY, "32-bit", "");
     IJ.run(impDY, "Enhance Contrast...", "saturated=0 normalize process_all use");
-    IJ.run(impDY, "Convolve...", "text1=[1 2 1\n0 0 0\n-1 -2 -1\n]  stack");
+    IJ.run(impDY, "Convolve...", "text1=[1\n0\n-1\n] normalize");
+    //IJ.run(impDY, "Convolve...", "text1=[1 2 1\n0 0 0\n-1 -2 -1\n]  stack");
     // IJ.run(impDY, "Enhance Contrast...", "saturated=0 normalize process_all");
 
     
